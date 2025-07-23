@@ -31,22 +31,28 @@ patient_1 = Patient(**patient_info)
 
 """
 
+
+"""
 # Field_Validator
 
 
-from pydantic import BaseModel,EmailStr,AnyUrl ,Field,field_validator,model_validator
+from pydantic import BaseModel,EmailStr,AnyUrl ,Field,field_validator,model_validator,computed_field
 from typing import List,Dict,Optional,Annotated
 
 
 class Patient(BaseModel):
     name:str= Annotated[str,Field(max_length=50, title='Name of the Patient', description='Give the name of the patient under 50 characters',examples=['Hemant','Shubham'],default='XYZ')]
-    email: EmailStr # This is a custom datatype given by pydantic inorder to save email for further data validation
-    url: AnyUrl # This is a custom datatype given by pydantic validate URL so instead of making if else logic and Regex and all you can simply use AnyUrl
+    email: EmailStr
+    url: AnyUrl 
     age:int = Field(ge=0, lt=120)
-    weight:float = Field(ge=0) # So here we had made a constraint where we said that weight should be greater than 0
+    weight:float = Field(ge=0) 
+    height:float
     married: Optional[bool] = None
     allergies:List[str] = Field(max_length=5)
-    contact_detials: Dict(str,str)
+    contact_detials: Dict[str,str]
+
+
+    # Field Validator operates in two mode : before and after
 
     @field_validator('email')
     @classmethod
@@ -70,13 +76,84 @@ class Patient(BaseModel):
         if model.age>60 and 'emergency' not in model.contact_details:
             raise ValueError("Patient older than 60 mush have an emergency contact")
         return model
+    
 
-def insert_patient_data(patient:Patient):
-    print(patient.name)
-    print(patient.age)
+    # Computed Field
+    @computed_field
+    @property
+    def calc_BMI(self) -> float:
+        bmi = self.weight/((self.height**2),2)
+        return bmi
+    
+"""
 
-# Field Validator operates in two mode : before and after
+# def insert_patient_data(patient:Patient):
+#     print(patient.name)
+#     print(patient.age)
 
 
-patient_info= {'name':'somename','age':'30'}
-patient_1 = Patient(**patient_info)
+
+"""
+
+# Nested_models
+from pydantic import BaseModel
+
+class Address(BaseModel):
+    city:str
+    state:str
+    pincode:str
+
+
+
+
+class Patient_new(BaseModel):
+    name:str
+    gender:str
+    age:int
+    address: Address
+
+
+
+
+
+address_dict = {'city':'Gurgoan','state':'Haryana','pincode':'122001'}
+address1 = Address(**address_dict)
+
+patient_dict ={'name':'xyz','gender':'Male','age':35,'address':address1}
+
+Patient_1= Patient_new(**patient_dict)
+
+print(Patient_1)
+
+"""
+
+
+
+# Exporting Pydantic models in form of dict
+
+
+from pydantic import BaseModel
+
+class Address(BaseModel):
+    city:str
+    state:str
+    pincode:str
+
+
+
+
+class Patient_new(BaseModel):
+    name:str
+    gender:str
+    age:int
+    address: Address
+
+
+address_dict = {'city':'Gurgoan','state':'Haryana','pincode':'122001'}
+address1 = Address(**address_dict)
+
+patient_dict ={'name':'xyz','gender':'Male','age':35,'address':address1}
+
+Patient_1= Patient_new(**patient_dict)
+
+temp = Patient_1.model_dump()
